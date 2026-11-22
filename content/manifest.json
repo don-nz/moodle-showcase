@@ -1,10 +1,40 @@
 {
-  "_comment": "Quizzes this tool serves. id = the name used in Moodle (custom parameter quiz=<id>); source = path in the content repo. Rebuild with: python3 scripts/build_content.py",
+  "_comment": "What this tool serves. id: the name used in Moodle (picked with Select content, or custom parameter quiz=<id>). source: path in the content repo. graded: false for simulators (no gradebook column). Rebuild with: python3 scripts/build_content.py",
   "quizzes": [
+    {
+      "id": "output-config-basics",
+      "title": "Output Configurations: Knowledge Basics",
+      "topic": "Power Amps: Output Configurations",
+      "graded": true,
+      "source": "cert_iii/UEEEC0066/term-2/power-amps/output-config/output_config_knowledge_basics.html"
+    },
+    {
+      "id": "output-config-circuit-analysis",
+      "title": "Output Configurations: Circuit Analysis",
+      "topic": "Power Amps: Output Configurations",
+      "graded": true,
+      "source": "cert_iii/UEEEC0066/term-2/power-amps/output-config/output_config_circuit_analysis.html"
+    },
+    {
+      "id": "power-amp-stages-basics",
+      "title": "Power Amplifier Stages: Knowledge Basics",
+      "topic": "Power Amps: Power Amp Stages",
+      "graded": true,
+      "source": "cert_iii/UEEEC0066/term-2/power-amps/stages/power_amp_stages_knowledge_basics.html"
+    },
     {
       "id": "power-amp-fault-finding-basics",
       "title": "Power Amplifier Fault Finding: Knowledge Basics",
+      "topic": "Power Amps: Fault Finding",
+      "graded": true,
       "source": "cert_iii/UEEEC0066/term-2/power-amps/fault-finding/power_amp_fault_finding_knowledge_basics.html"
+    },
+    {
+      "id": "power-amp-current-flow-sim",
+      "title": "Power Amplifier Current Flow Simulator",
+      "topic": "Simulators",
+      "graded": false,
+      "source": "cert_iii/UEEEC0066/resources/power_amp_dc_current_flow.html"
     }
   ]
 }

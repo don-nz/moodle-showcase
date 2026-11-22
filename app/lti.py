@@ -22,6 +22,9 @@ AGS_CLAIM = "https://purl.imsglobal.org/spec/lti-ags/claim/endpoint"
 SCOPE_SCORE = "https://purl.imsglobal.org/spec/lti-ags/scope/score"
 SCOPE_LINEITEM_RO = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly"
 TOOL_CONFIG = "https://purl.imsglobal.org/spec/lti-tool-configuration"
+DL_CLAIM = "https://purl.imsglobal.org/spec/lti-dl/claim/"
+MSG_RESOURCE = "LtiResourceLinkRequest"
+MSG_DEEP_LINK = "LtiDeepLinkingRequest"
 
 JWKS_CACHE_SECONDS = 3600
 CLOCK_LEEWAY = 60
@@ -37,6 +40,15 @@ class Launch:
     quiz_id: str
     user_name: str | None
     can_send_grade: bool
+
+
+@dataclass
+class DeepLinkRequest:
+    """A teacher choosing content while adding an activity in Moodle."""
+    platform_id: int
+    deployment_id: str
+    return_url: str
+    data: str | None
 
 
 def same_host(a: str, b: str) -> bool:
@@ -94,7 +106,8 @@ class LtiTool:
         return platform["auth_url"] + sep + urlencode(query), state
 
     # 2. Launch ----------------------------------------------------------
-    def launch(self, id_token: str, state: str, cookie_state: str | None, quiz_ids: list[str]) -> Launch:
+    def launch(self, id_token: str, state: str, cookie_state: str | None,
+               quiz_ids: list[str]) -> Launch | DeepLinkRequest:
         if not id_token or not state:
             raise LtiError("The launch is missing id_token or state.")
         # The state cookie can be blocked when Moodle shows the tool in an
@@ -114,11 +127,14 @@ class LtiTool:
             raise LtiError("The launch nonce doesn't match.")
         if claims.get(CLAIM + "version") != "1.3.0":
             raise LtiError("Only LTI 1.3 launches are supported.")
-        if claims.get(CLAIM + "message_type") != "LtiResourceLinkRequest":
+        message_type = claims.get(CLAIM + "message_type")
+        if message_type not in (MSG_RESOURCE, MSG_DEEP_LINK):
             raise LtiError("This kind of LTI message isn't supported yet.")
         deployment_id = claims.get(CLAIM + "deployment_id")
         if not deployment_id or not self.db.has_deployment(platform["id"], deployment_id):
             raise LtiError("This deployment of the tool isn't registered.")
+        if message_type == MSG_DEEP_LINK:
+            return self._deep_link_request(claims, platform, deployment_id)
         if not claims.get("sub"):
             raise LtiError("Anonymous launches aren't supported: the tool needs to know who to give the grade to.")
 
@@ -142,6 +158,46 @@ class LtiTool:
             lineitem_url=ags.get("lineitem"), ags_scopes=" ".join(scopes),
         )
         return launch
+
+    @staticmethod
+    def _deep_link_request(claims: dict, platform, deployment_id: str) -> DeepLinkRequest:
+        settings = claims.get(DL_CLAIM + "deep_linking_settings") or {}
+        return_url = settings.get("deep_link_return_url")
+        if not return_url or not same_host(return_url, platform["issuer"]):
+            raise LtiError("The content selection request has no valid return address.")
+        if "ltiResourceLink" not in (settings.get("accept_types") or []):
+            raise LtiError("Moodle isn't asking for an activity link here, so there's nothing to choose.")
+        return DeepLinkRequest(platform["id"], deployment_id, return_url, settings.get("data"))
+
+    def deep_link_response(self, request: DeepLinkRequest, item_id: str, title: str, graded: bool) -> str:
+        """The signed JWT that tells Moodle which quiz the teacher picked."""
+        platform = self.db.get_platform(request.platform_id)
+        if platform is None or not platform["active"]:
+            raise LtiError("This learning platform has been switched off.")
+        content_item = {
+            "type": "ltiResourceLink",
+            "title": title,
+            "url": self.launch_url,
+            "custom": {"quiz": item_id},
+        }
+        if graded:
+            # Scores are sent as right / total; Moodle scales them to this maximum.
+            content_item["lineItem"] = {"scoreMaximum": 100, "label": title, "resourceId": item_id}
+        now = int(time.time())
+        claims = {
+            "iss": platform["client_id"],
+            "aud": platform["issuer"],
+            "iat": now,
+            "exp": now + 300,
+            "nonce": secrets.token_urlsafe(16),
+            CLAIM + "message_type": "LtiDeepLinkingResponse",
+            CLAIM + "version": "1.3.0",
+            CLAIM + "deployment_id": request.deployment_id,
+            DL_CLAIM + "content_items": [content_item],
+        }
+        if request.data:
+            claims[DL_CLAIM + "data"] = request.data
+        return jwt.encode(claims, self.keys.private_key, algorithm="RS256", headers={"kid": self.keys.kid})
 
     def _verify_id_token(self, id_token: str, platform) -> dict:
         try:
@@ -285,7 +341,10 @@ class LtiTool:
                 "domain": tool_host,
                 "target_link_uri": self.launch_url,
                 "claims": ["iss", "sub", "name", "given_name", "family_name"],
-                "messages": [{"type": "LtiResourceLinkRequest"}],
+                "messages": [
+                    {"type": MSG_RESOURCE},
+                    {"type": MSG_DEEP_LINK, "target_link_uri": self.launch_url, "label": "Choose a quiz"},
+                ],
                 "description": "Interactive electronics quizzes and simulators.",
             },
         }

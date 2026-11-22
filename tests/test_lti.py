@@ -89,10 +89,16 @@ class FakeMoodle:
 
 @pytest.fixture
 def env(tmp_path):
-    content = tmp_path / "content"
-    content.mkdir()
-    (content / "quiz-a.html").write_text(QUIZ_HTML)
-    (content / "quiz-b.html").write_text(QUIZ_HTML)
+    content = tmp_path / "content" / "built"
+    content.mkdir(parents=True)
+    for name in ("quiz-a", "quiz-b", "sim-c"):
+        (content / f"{name}.html").write_text(QUIZ_HTML)
+    (content.parent / "manifest.json").write_text(json.dumps({"quizzes": [
+        {"id": "quiz-a", "title": "Quiz A", "topic": "Topic 1", "graded": True},
+        {"id": "quiz-b", "title": "Quiz B", "topic": "Topic 1", "graded": True},
+        {"id": "sim-c", "title": "Sim C", "topic": "Simulators", "graded": False},
+        {"id": "not-built", "title": "Missing", "topic": "Topic 1", "graded": True},
+    ]}))
     settings = Settings(base_url="https://tools.test", data_dir=tmp_path / "data", content_dir=content,
                         allowed_issuers=(ISS,), tool_name="Test Tool")
     moodle = FakeMoodle()
@@ -257,3 +263,83 @@ def test_score_rejects_impossible_values(env, score, max_score):
     register(client)
     token = score_token(launch(client, moodle).text)
     assert client.post("/api/score", json={"token": token, "score": score, "max": max_score}).status_code == 400
+
+
+DL = "https://purl.imsglobal.org/spec/lti-dl/claim/"
+RETURN_URL = f"{ISS}/mod/lti/contentitem_return.php?course=2&id=1&sesskey=abc"
+
+
+def deep_link_launch(client, moodle, settings=None):
+    settings = settings or {"deep_link_return_url": RETURN_URL, "accept_types": ["ltiResourceLink"],
+                            "data": "opaque-data"}
+    return launch(client, moodle, **{CLAIM + "message_type": "LtiDeepLinkingRequest",
+                                     DL + "deep_linking_settings": settings,
+                                     "https://purl.imsglobal.org/spec/lti-ags/claim/endpoint": None})
+
+
+def pick(client, picker_html, item):
+    token = re.search(r'name="token" value="([^"]+)"', picker_html).group(1)
+    return client.post("/lti/deeplink", data={"token": token, "item": item})
+
+
+def test_registration_offers_content_selection(env):
+    client, moodle = env
+    register(client)
+    messages = moodle.registrations[0]["https://purl.imsglobal.org/spec/lti-tool-configuration"]["messages"]
+    assert {m["type"] for m in messages} == {"LtiResourceLinkRequest", "LtiDeepLinkingRequest"}
+
+
+def test_content_selection_lists_built_items_by_topic(env):
+    client, moodle = env
+    register(client)
+    r = deep_link_launch(client, moodle)
+    assert r.status_code == 200, r.text
+    assert "Quiz A" in r.text and "Sim C" in r.text and "Simulators" in r.text
+    assert "Missing" not in r.text  # in the manifest but not built
+
+
+def test_content_selection_returns_signed_choice_to_moodle(env):
+    client, moodle = env
+    register(client)
+    r = pick(client, deep_link_launch(client, moodle).text, "quiz-b")
+    assert r.status_code == 200, r.text
+    assert f'action="{RETURN_URL.replace("&", "&amp;")}"' in r.text
+    response_jwt = re.search(r'name="JWT" value="([^"]+)"', r.text).group(1)
+    key = jwt.PyJWKSet.from_dict(moodle.tool_jwks).keys[0].key
+    claims = jwt.decode(response_jwt, key, algorithms=["RS256"], audience=ISS)
+    assert claims["iss"] == CLIENT_ID
+    assert claims[CLAIM + "message_type"] == "LtiDeepLinkingResponse"
+    assert claims[CLAIM + "deployment_id"] == DEPLOYMENT
+    assert claims[DL + "data"] == "opaque-data"
+    item = claims[DL + "content_items"][0]
+    assert item["custom"] == {"quiz": "quiz-b"} and item["url"] == "https://tools.test/lti/launch"
+    assert item["lineItem"]["scoreMaximum"] == 100
+
+
+def test_simulator_gets_no_gradebook_column_or_score_script(env):
+    client, moodle = env
+    register(client)
+    r = pick(client, deep_link_launch(client, moodle).text, "sim-c")
+    response_jwt = re.search(r'name="JWT" value="([^"]+)"', r.text).group(1)
+    item = jwt.decode(response_jwt, options={"verify_signature": False})[DL + "content_items"][0]
+    assert "lineItem" not in item
+    page = launch(client, moodle, **{CLAIM + "custom": {"quiz": "sim-c"}})
+    assert page.status_code == 200 and "/api/score" not in page.text
+
+
+def test_content_selection_rejects_forged_picker_token_and_unknown_item(env):
+    client, moodle = env
+    register(client)
+    assert client.post("/lti/deeplink", data={"token": "forged", "item": "quiz-a"}).status_code == 400
+    assert pick(client, deep_link_launch(client, moodle).text, "not-built").status_code == 400
+
+
+@pytest.mark.parametrize("settings", [
+    {"deep_link_return_url": "https://evil.test/return", "accept_types": ["ltiResourceLink"]},
+    {"deep_link_return_url": RETURN_URL, "accept_types": ["file"]},
+    {"accept_types": ["ltiResourceLink"]},
+])
+def test_content_selection_rejects_bad_settings(env, settings):
+    client, moodle = env
+    register(client)
+    assert deep_link_launch(client, moodle, settings).status_code == 400

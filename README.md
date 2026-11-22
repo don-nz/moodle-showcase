@@ -8,7 +8,8 @@ only holds built copies in `content/built/`.
 
 | Path | What it is |
 |---|---|
-| `app/lti.py` | LTI 1.3: login, launch checks, grade return, dynamic registration |
+| `app/lti.py` | LTI 1.3: login, launch checks, content selection, grade return, dynamic registration |
+| `app/catalog.py` | Reads `content/manifest.json` |
 | `app/main.py` | Web routes, and the score script added to each quiz page |
 | `app/db.py` | SQLite: platforms, launches, attempts |
 | `content/manifest.json` | Which quizzes the tool serves |
@@ -62,12 +63,18 @@ Check from the laptop: `curl https://tools.test/.well-known/jwks.json`.
 2. **Site administration → Plugins → Activity modules → External tool → Manage tools.**
 3. In **Tool URL**, enter `https://tools.test/lti/register` and click **Add LTI Advantage**.
 4. When the dialog closes, the tool shows as **pending**. Click **Activate**.
-5. In the tool's settings (the cog), check that grade sync (**IMS LTI Assignment and
+5. In the tool's settings (the pencil), check that grade sync (**IMS LTI Assignment and
    Grade Services**) is on.
-6. In a course: **Add an activity → External tool**, choose **Quiz Showcase**, and save.
+6. Under **Tool configuration usage**, choose **Show in activity chooser and as a preconfigured tool**.
+7. Tick **Supports Deep Linking (Content-Item Message)** and set **Content Selection URL** to
+   `https://tools.test/lti/launch`. A tool registered after this feature was added already has these set.
+8. In a course: turn on **Edit mode**, then **Add content → Activity or resource → Quiz Showcase**.
+   Click **Select content**, pick a quiz, and save. Graded quizzes get their own gradebook column,
+   out of 100. Simulators don't get one.
 
-To serve a quiz other than the first one, give the activity the custom parameter
-`quiz=<id>`, where the id comes from `content/manifest.json`.
+The quiz list comes from `content/manifest.json`, grouped by its `topic` field. As a fallback,
+an activity can name a quiz with the custom parameter `quiz=<id>`. With neither, it opens the
+first quiz in the manifest.
 
 Only platforms listed in `TOOL_ALLOWED_ISSUERS` (in `/etc/quiz-tool.env`) can register.
 To switch a college off, set `active = 0` on its row in the `platforms` table of
