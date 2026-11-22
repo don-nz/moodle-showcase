@@ -343,3 +343,9 @@ def test_content_selection_rejects_bad_settings(env, settings):
     client, moodle = env
     register(client)
     assert deep_link_launch(client, moodle, settings).status_code == 400
+
+
+def test_opening_launch_url_in_browser_shows_explanation(env):
+    client, _ = env
+    r = client.get("/lti/launch")
+    assert r.status_code == 200 and "Moodle" in r.text

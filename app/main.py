@@ -129,6 +129,11 @@ def create_app(settings: Settings | None = None, http: httpx.Client | None = Non
         resp.set_cookie(STATE_COOKIE, state, max_age=600, secure=True, httponly=True, samesite="none")
         return resp
 
+    @app.get("/lti/launch", response_class=HTMLResponse)
+    def launch_info():
+        return page(settings.tool_name, "Activities open from Moodle. This address only accepts "
+                    "launches sent by a learning platform, so there's nothing to see here directly.")
+
     @app.post("/lti/launch")
     async def launch(request: Request):
         form = await request.form()
