@@ -1,0 +1,10 @@
+{
+  "_comment": "Quizzes this tool serves. id = the name used in Moodle (custom parameter quiz=<id>); source = path in the content repo. Rebuild with: python3 scripts/build_content.py",
+  "quizzes": [
+    {
+      "id": "power-amp-fault-finding-basics",
+      "title": "Power Amplifier Fault Finding: Knowledge Basics",
+      "source": "cert_iii/UEEEC0066/term-2/power-amps/fault-finding/power_amp_fault_finding_knowledge_basics.html"
+    }
+  ]
+}

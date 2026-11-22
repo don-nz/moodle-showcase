@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+.pytest_cache/
+# database, private key and session secret: never commit
+instance/
+*.env
