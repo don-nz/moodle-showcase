@@ -5,9 +5,9 @@ through Cloudflare Tunnels. The same steps work on VMs on your PC and on servers
 hosting provider.
 
 ```
- Browser ──https──▶ Cloudflare ──tunnel──▶ Moodle server  (nginx on 127.0.0.1:80)
+ Browser ──https──▶ Cloudflare ──tunnel──▶ Moodle server  (aht-test.site → nginx on 127.0.0.1:80)
                          │
-                         └──────tunnel──▶ Tool server    (quiz tool on 127.0.0.1:8000)
+                         └──────tunnel──▶ Tool server    (tools.aht-test.site → tool on 127.0.0.1:8000)
 ```
 
 - Neither server opens any web ports. Each server's `cloudflared` connects out to
@@ -15,9 +15,12 @@ hosting provider.
 - Moodle and the tool talk to each other through their public addresses, the same way a
   college's Moodle would.
 
-The examples use `moodle.aht-test.site` and `tools.aht-test.site`. Keep to one level under
-your domain: Cloudflare's free certificate covers `*.aht-test.site`, but not
-`moodle.dev.aht-test.site`.
+The examples put Moodle on the bare domain `aht-test.site` and the tool on
+`tools.aht-test.site`.
+- Cloudflare's free certificate covers the bare domain and one level of subdomain
+  (`*.aht-test.site`), but not `x.dev.aht-test.site`.
+- Moodle's address is also its identity in LTI. Changing it later means registering the tool
+  again and re-picking every activity, so choose it once.
 
 ---
 
@@ -68,7 +71,7 @@ things now and then, so the labels may differ slightly.
 2. The install page shows a command ending in a long **token**. Copy just the token, and
    don't run the command; the setup script does that.
 3. Add a public hostname (published application):
-   - **Subdomain:** `moodle`
+   - **Subdomain:** leave empty, for the bare domain
    - **Domain:** `aht-test.site`
    - **Service:** `HTTP`, URL `localhost:80`
 4. Repeat for `showcase-tools`, with subdomain `tools` and service `HTTP`, URL `localhost:8000`.
@@ -87,7 +90,7 @@ From the laptop:
 ```sh
 scp deploy/setup-moodle.sh aht-moodle:
 ssh aht-moodle
-sudo MOODLE_URL=https://moodle.aht-test.site ADMIN_EMAIL=you@example.com bash setup-moodle.sh
+sudo MOODLE_URL=https://aht-test.site ADMIN_EMAIL=you@example.com bash setup-moodle.sh
 ```
 - Paste the `showcase-moodle` token when it asks.
 - The script takes about 10 minutes.
@@ -100,7 +103,7 @@ From the laptop:
 ```sh
 scp deploy/setup-tools.sh aht-tools:
 ssh aht-tools
-sudo TOOL_URL=https://tools.aht-test.site MOODLE_URL=https://moodle.aht-test.site bash setup-tools.sh
+sudo TOOL_URL=https://tools.aht-test.site MOODLE_URL=https://aht-test.site bash setup-tools.sh
 exit
 deploy/deploy.sh aht-tools        # installs the code; should end with "active"
 ```
@@ -109,7 +112,7 @@ Paste the `showcase-tools` token when it asks.
 ## 6. Check both are reachable
 
 - https://tools.aht-test.site/.well-known/jwks.json shows `{"keys":[...`.
-- https://moodle.aht-test.site shows the Moodle login page with a padlock.
+- https://aht-test.site shows the Moodle login page with a padlock.
 - In Cloudflare, both tunnels show as **Healthy**.
 
 ## 7. Connect the tool to Moodle

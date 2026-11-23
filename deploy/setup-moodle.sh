@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Set up a fresh Ubuntu 24.04 server as the showcase Moodle, behind a Cloudflare Tunnel.
 #
-#   sudo MOODLE_URL=https://moodle.aht-test.site ADMIN_EMAIL=you@example.com bash setup-moodle.sh
+#   sudo MOODLE_URL=https://aht-test.site ADMIN_EMAIL=you@example.com bash setup-moodle.sh
 #
 # Optional: SITE_NAME (default "Quiz Showcase"), TIMEZONE (default Australia/Sydney),
 # MOODLE_BRANCH (default MOODLE_503_STABLE), CF_TUNNEL_TOKEN (otherwise you're asked).
@@ -12,7 +12,7 @@
 # /root/moodle-credentials.  See docs/server-setup.md.
 set -euo pipefail
 
-: "${MOODLE_URL:?Set MOODLE_URL, e.g. https://moodle.aht-test.site}"
+: "${MOODLE_URL:?Set MOODLE_URL, e.g. https://aht-test.site}"
 : "${ADMIN_EMAIL:?Set ADMIN_EMAIL (email for the Moodle admin account)}"
 SITE_NAME="${SITE_NAME:-Quiz Showcase}"
 TIMEZONE="${TIMEZONE:-Australia/Sydney}"
