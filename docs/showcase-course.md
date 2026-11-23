@@ -1,10 +1,10 @@
 # Showcase course setup sheet
 
-Everything to type into Moodle to build the Amplifier Showcase course. Each block is ready to paste.
+Everything to type into Moodle to build the two showcase courses: **Amplifier Showcase** (UEEEC0066) and **Digital Electronics Showcase** (UEEEC0069). Each block is ready to paste.
 
 ## Before you start
 
-- Run `deploy/deploy.sh`, so the tool has all five items.
+- Run `deploy/deploy.sh`, so the tool has all ten items.
 - In the tool's settings, turn on **Supports Deep Linking** and set the Content Selection URL. README.md, step 7, covers this.
 
 ## For every activity
@@ -21,6 +21,8 @@ Everything to type into Moodle to build the Amplifier Showcase course. Each bloc
 Moodle sets up the gradebook column itself, out of 100. A score of 7 / 12 shows as 58.33.
 
 ---
+
+# Course 1: Amplifier Showcase
 
 ## Course
 
@@ -82,7 +84,7 @@ Moodle sets up the gradebook column itself, out of 100. A score of 7 / 12 shows 
 
 #### Activity 4: Current Flow Simulator
 
-- **Pick:** Power Amplifier Current Flow Simulator (under Simulators)
+- **Pick:** Power Amplifier Current Flow Simulator
 - **Graded:** no. Set completion to **View**.
 
 **Description:**
@@ -105,6 +107,80 @@ Moodle sets up the gradebook column itself, out of 100. A score of 7 / 12 shows 
 **Description:**
 
 > Predict what each component fault does to the amplifier's output, match faults that look the same, and cover heatsink mounting, output coupling and maximum output power.
+
+---
+
+# Course 2: Digital Electronics Showcase
+
+## Course
+
+**Course full name:** Digital Electronics Showcase
+**Course short name:** DIGSHOW
+
+**Course summary:**
+
+> Interactive practice and assessment for digital electronics. Students derive and simplify logic circuits step by step on the circuit itself, then build and fault-find the same circuit on a simulated breadboard. Quiz scores go straight to the Moodle gradebook.
+
+## Section: Logic Circuits
+
+**Section summary:**
+
+> Combinational logic, from Boolean expressions to a working circuit on the bench.
+
+---
+
+### Subsection: Boolean Algebra
+
+**Description:**
+
+> Boolean expressions for each gate, DeMorgan's theorems and simplification. Then the same three-input circuit is derived on paper, built on a breadboard and fault-found with a logic probe.
+
+The five activities follow one path: learn the rules, derive a circuit, build it, find a fault in it. Activities 3, 4 and 5 all use the same circuit, Z = A·B·C̄ + B̄·C. Keep them in this order.
+
+#### Activity 1: Knowledge Basics
+
+- **Pick:** Boolean Algebra: Knowledge Basics
+- **Graded:** yes. 9 questions.
+
+**Description:**
+
+> How Boolean algebra differs from ordinary algebra, the expression for each of the seven gates, writing the expression for a circuit, truth tables, DeMorgan's theorems and simplifying to sum-of-products.
+
+#### Activity 2: Step Through the Circuit (A, B)
+
+- **Pick:** Step Through the Circuit (A, B)
+- **Graded:** yes. 6 steps.
+
+**Description:**
+
+> A two-input circuit built only from NAND and NOT gates. Label each point on the circuit, work out every gate's output, apply De Morgan's law, cancel the double negations, and check the result with a truth table.
+
+#### Activity 3: Step Through the Circuit (A, B, C)
+
+- **Pick:** Step Through the Circuit (A, B, C)
+- **Graded:** yes. 6 steps.
+
+**Description:**
+
+> A three-input circuit built from 7408, 7402 and 7400 ICs, with pin numbers as in the lab. Derive Z level by level, simplify it with De Morgan's law, and complete the truth table you would check your measured outputs against.
+
+#### Activity 4: Logic Circuit on a Breadboard
+
+- **Pick:** Logic Circuit on a Breadboard: Simulator
+- **Graded:** no. Set completion to **View**.
+
+**Description:**
+
+> The circuit from Activity 3, built on a breadboard as in the lab. Flip the A, B and C switches and watch the level on every wire and pin. Tap holes and pins to see how they connect, and step through a change one stage at a time.
+
+#### Activity 5: Fault Finding on a Breadboard
+
+- **Pick:** Fault Finding on a Breadboard: Simulator
+- **Graded:** no. Set completion to **View**.
+
+**Description:**
+
+> The same breadboard circuit with one hidden fault. Compare the output with the truth table, probe holes and pins with a logic probe, and track down the fault the way you would on the bench.
 
 ---
 

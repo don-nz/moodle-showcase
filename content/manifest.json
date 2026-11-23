@@ -32,9 +32,44 @@
     {
       "id": "power-amp-current-flow-sim",
       "title": "Power Amplifier Current Flow Simulator",
-      "topic": "Simulators",
+      "topic": "Power Amps: Power Amp Stages",
       "graded": false,
       "source": "cert_iii/UEEEC0066/resources/power_amp_dc_current_flow.html"
+    },
+    {
+      "id": "boolean-algebra-basics",
+      "title": "Boolean Algebra: Knowledge Basics",
+      "topic": "Digital Electronics: Boolean Algebra",
+      "graded": true,
+      "source": "cert_iii/UEEEC0069/term-1/knowledge/digital_knowledge_boolean_algebra.html"
+    },
+    {
+      "id": "boolean-circuit-derivation-ab",
+      "title": "Step Through the Circuit (A, B)",
+      "topic": "Digital Electronics: Boolean Algebra",
+      "graded": true,
+      "source": "cert_iii/UEEEC0069/term-1/exercises/logic-gates/digital_circuit_derivation_ab.html"
+    },
+    {
+      "id": "boolean-circuit-derivation-abc",
+      "title": "Step Through the Circuit (A, B, C)",
+      "topic": "Digital Electronics: Boolean Algebra",
+      "graded": true,
+      "source": "cert_iii/UEEEC0069/term-1/exercises/logic-gates/digital_circuit_derivation_abc.html"
+    },
+    {
+      "id": "logic-breadboard-sim",
+      "title": "Logic Circuit on a Breadboard: Simulator",
+      "topic": "Digital Electronics: Boolean Algebra",
+      "graded": false,
+      "source": "cert_iii/UEEEC0069/term-1/exercises/logic-gates/digital_logic_breadboard_simulator.html"
+    },
+    {
+      "id": "logic-fault-finding-sim",
+      "title": "Fault Finding on a Breadboard: Simulator",
+      "topic": "Digital Electronics: Boolean Algebra",
+      "graded": false,
+      "source": "cert_iii/UEEEC0069/term-1/exercises/logic-gates/digital_logic_fault_finding_simulator.html"
     }
   ]
 }
