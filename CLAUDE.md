@@ -50,6 +50,7 @@ Anything that runs in the browser can be read. Never present obfuscation or a se
   - The private key, session secret and database live in `TOOL_DATA_DIR`, never in git.
 - **Content arrives through a build step:** `scripts/build_content.py` runs the content repo's `build_college.py` for each quiz in `content/manifest.json` and commits the output to `content/built/`.
 - **Scores reach the server without editing content:** the tool adds a script to each served quiz page. The script wraps the engine's `showSummary`/`resetQuiz` and posts the score once per attempt.
+- **Servers are built by script:** `deploy/setup-moodle.sh` and `deploy/setup-tools.sh` set up fresh Ubuntu servers behind Cloudflare Tunnels (decided 2026-11-23), following `docs/server-setup.md`. Keep the scripts and the guide in step, since they're meant to work unchanged on a hosting provider.
 - **Grade sync is AGS 2.0. It has not yet been tested against the real Moodle.** See README.md for setup.
 
 ## First milestone

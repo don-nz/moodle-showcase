@@ -15,6 +15,11 @@ from .keys import ToolKeys
 from .catalog import load_catalog
 from .lti import SCOPE_SCORE, DeepLinkRequest, LtiError, LtiTool
 
+# Added to every served page. Inside Moodle the course page is the menu, so the
+# page's own "← All exercises / All simulators / Menu" link is hidden.
+MOODLE_STYLE = ("<style>.back-link { display: none !important; } "
+                ".card-top-bar { justify-content: flex-end; }</style>\n")
+
 SCORE_TOKEN_HOURS = 6
 PICKER_TOKEN_MINUTES = 30
 STATE_COOKIE = "lti_state"
@@ -155,6 +160,9 @@ def create_app(settings: Settings | None = None, http: httpx.Client | None = Non
         script = SCORE_SCRIPT.replace("__TOKEN__", json.dumps(token)) if items[launch.quiz_id].graded else ""
         cut = quiz_html.lower().rfind("</body>")
         quiz_html = quiz_html[:cut] + script + quiz_html[cut:] if cut >= 0 else quiz_html + script
+        cut = quiz_html.lower().find("</head>")
+        if cut >= 0:
+            quiz_html = quiz_html[:cut] + MOODLE_STYLE + quiz_html[cut:]
         resp = HTMLResponse(quiz_html, headers={"Cache-Control": "no-store"})
         resp.delete_cookie(STATE_COOKIE, secure=True, httponly=True, samesite="none")
         return resp

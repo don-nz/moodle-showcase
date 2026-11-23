@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Copy the tool to the tools VM and restart it. Run from the laptop:
-#   deploy/deploy.sh [host]        (default host: tools.test)
-# The first-time setup in README.md must have been done once.
+#   deploy/deploy.sh <host>        e.g. aht-tools (see ~/.ssh/config in docs/server-setup.md)
+# The server must have been set up once with deploy/setup-tools.sh.
 set -euo pipefail
-HOST="${1:-tools.test}"
+HOST="${1:?Usage: deploy/deploy.sh <host>  (e.g. aht-tools)}"
 cd "$(dirname "$0")/.."
 
 rsync -a --delete --exclude .venv --exclude .git --exclude instance --exclude __pycache__ \

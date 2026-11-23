@@ -19,7 +19,7 @@ CLIENT_ID = "client-abc"
 DEPLOYMENT = "7"
 LINEITEM = f"{ISS}/mod/lti/services.php/2/lineitems/5/lineitem?type_id=1"
 CLAIM = "https://purl.imsglobal.org/spec/lti/claim/"
-QUIZ_HTML = "<html><body><h1>Quiz</h1></body></html>"
+QUIZ_HTML = '<html><head></head><body><a class="back-link" href="./exercises.html">← All exercises</a><h1>Quiz</h1></body></html>'
 
 
 class FakeMoodle:
@@ -349,3 +349,12 @@ def test_opening_launch_url_in_browser_shows_explanation(env):
     client, _ = env
     r = client.get("/lti/launch")
     assert r.status_code == 200 and "Moodle" in r.text
+
+
+def test_served_pages_hide_the_back_link(env):
+    client, moodle = env
+    register(client)
+    for quiz in ("quiz-a", "sim-c"):
+        r = launch(client, moodle, **{CLAIM + "custom": {"quiz": quiz}})
+        head = r.text[:r.text.index("</head>")]
+        assert ".back-link { display: none !important; }" in head

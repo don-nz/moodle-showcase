@@ -14,7 +14,8 @@ only holds built copies in `content/built/`.
 | `app/db.py` | SQLite: platforms, launches, attempts |
 | `content/manifest.json` | Which quizzes the tool serves |
 | `scripts/build_content.py` | Rebuilds `content/built/` from the content repo |
-| `deploy/` | nginx site, systemd unit, env example, `deploy.sh` |
+| `deploy/` | Server setup scripts and `deploy.sh` |
+| `docs/` | Server setup guide and showcase course sheet |
 | `tests/` | End-to-end tests against a fake Moodle |
 
 ## On the laptop
@@ -23,54 +24,20 @@ only holds built copies in `content/built/`.
 python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 .venv/bin/pytest -q                  # tests
 python3 scripts/build_content.py     # after changing quizzes or the manifest
-deploy/deploy.sh                     # copy to tools.test and restart
+deploy/deploy.sh aht-tools          # copy to the tool server and restart
 ```
 
-## First-time setup of the tools VM
+## Setting up servers
 
-Run once on **tools.test**:
+[docs/server-setup.md](docs/server-setup.md) covers building both servers from scratch, behind
+Cloudflare Tunnels, on PC VMs or at a hosting provider:
+- `deploy/setup-moodle.sh` sets up the Moodle server.
+- `deploy/setup-tools.sh` sets up the tool server.
+- After that, `deploy/deploy.sh <host>` installs and updates the tool's code.
 
-```sh
-sudo useradd --system --home /opt/quiz-tool --shell /usr/sbin/nologin quiztool
-sudo mkdir -p /opt/quiz-tool && sudo python3 -m venv /opt/quiz-tool/.venv
-```
+[docs/showcase-course.md](docs/showcase-course.md) has the two showcase courses, ready to paste.
 
-Then, from the laptop, copy the config files across:
-
-```sh
-scp deploy/quiz-tool.env.example deploy/quiz-tool.service deploy/nginx-tools.conf tools.test:
-```
-
-And on **tools.test**:
-
-```sh
-sudo install -m 640 -g quiztool quiz-tool.env.example /etc/quiz-tool.env
-sudo install -m 644 quiz-tool.service /etc/systemd/system/
-sudo install -m 644 nginx-tools.conf /etc/nginx/sites-available/quiz-tool
-sudo ln -s /etc/nginx/sites-available/quiz-tool /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo systemctl daemon-reload && sudo systemctl enable quiz-tool
-sudo nginx -t && sudo systemctl reload nginx
-rm quiz-tool.env.example quiz-tool.service nginx-tools.conf
-```
-
-Finally run `deploy/deploy.sh` from the laptop. It should end with `active`.
-Check from the laptop: `curl https://tools.test/.well-known/jwks.json`.
-
-## Adding the tool to Moodle
-
-1. Log in to https://moodle.test as admin.
-2. **Site administration → Plugins → Activity modules → External tool → Manage tools.**
-3. In **Tool URL**, enter `https://tools.test/lti/register` and click **Add LTI Advantage**.
-4. When the dialog closes, the tool shows as **pending**. Click **Activate**.
-5. In the tool's settings (the pencil), check that grade sync (**IMS LTI Assignment and
-   Grade Services**) is on.
-6. Under **Tool configuration usage**, choose **Show in activity chooser and as a preconfigured tool**.
-7. Tick **Supports Deep Linking (Content-Item Message)** and set **Content Selection URL** to
-   `https://tools.test/lti/launch`. A tool registered after this feature was added already has these set.
-8. In a course: turn on **Edit mode**, then **Add content → Activity or resource → Quiz Showcase**.
-   Click **Select content**, pick a quiz, and save. Graded quizzes get their own gradebook column,
-   out of 100. Simulators don't get one.
+## How quizzes are chosen
 
 The quiz list comes from `content/manifest.json`, grouped by its `topic` field. As a fallback,
 an activity can name a quiz with the custom parameter `quiz=<id>`. With neither, it opens the
