@@ -23,7 +23,7 @@ only holds built copies in `content/built/`.
 ```sh
 python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 .venv/bin/pytest -q                  # tests
-python3 scripts/build_content.py     # after changing quizzes or the manifest
+python3 scripts/build_content.py     # after committing quiz changes in the content repo (builds from its last commit)
 deploy/deploy.sh aht-tools          # copy to the tool server and restart
 ```
 
