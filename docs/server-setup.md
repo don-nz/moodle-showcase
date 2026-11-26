@@ -5,7 +5,7 @@ through Cloudflare Tunnels. The same steps work on VMs on your PC and on servers
 hosting provider.
 
 ```
- Browser ──https──▶ Cloudflare ──tunnel──▶ Moodle server  (aht-test.site → nginx on 127.0.0.1:80)
+ Browser ──https──▶ Cloudflare ──tunnel──▶ Moodle server  (moodle.aht-test.site → nginx on 127.0.0.1:80)
                          │
                          └──────tunnel──▶ Tool server    (tools.aht-test.site → tool on 127.0.0.1:8000)
 ```
@@ -15,8 +15,8 @@ hosting provider.
 - Moodle and the tool talk to each other through their public addresses, the same way a
   college's Moodle would.
 
-The examples put Moodle on the bare domain `aht-test.site` and the tool on
-`tools.aht-test.site`.
+The examples use `moodle.aht-test.site` and `tools.aht-test.site`, which keeps the bare domain
+free for a landing page later.
 - Cloudflare's free certificate covers the bare domain and one level of subdomain
   (`*.aht-test.site`), but not `x.dev.aht-test.site`.
 - Moodle's address is also its identity in LTI. Changing it later means registering the tool
@@ -26,17 +26,31 @@ The examples put Moodle on the bare domain `aht-test.site` and the tool on
 
 ## 1. Create the two servers
 
+Use **Ubuntu Server 24.04 LTS** for both. Moodle 5.3 can't use the PHP 8.5 in 26.04, and one
+version is less to look after. (The tool also runs on 26.04.)
+
 | | Moodle | Tool |
 |---|---|---|
-| OS | **Ubuntu Server 24.04 LTS** (required: Moodle 5.3 can't use 26.04's PHP 8.5) | Ubuntu Server 24.04 or 26.04 |
-| CPU / RAM / disk | 2 / 4 GB / 25 GB | 1–2 / 2 GB / 15 GB |
-| Hostname | `moodle` | `tools` |
+| CPU / RAM / disk on the PC | 4 / 6 GB / 40 GB | 2 / 2 GB / 20 GB |
+| CPU / RAM at a provider | 2 / 4 GB | 1 / 1–2 GB |
+| Hostname | `moodle-pc` | `tools-pc` |
+
+Hostnames may only use letters, digits and hyphens: no dots or underscores.
 
 **On your PC (virt-manager):**
-- Create each VM from the 24.04 Server ISO, on the default NAT network. No IP pinning is
-  needed, because the tunnels connect out.
-- In the installer, tick **OpenSSH server**.
-- Take a snapshot after the install.
+1. Create each VM from the 24.04 Server ISO, on the default NAT network. In the installer, tick
+   **OpenSSH server**.
+2. Pin each VM's IP, so the SSH shortcuts in step 2 keep working. On the PC:
+   ```sh
+   sudo virsh domiflist <vm name>           # shows the VM's MAC address
+   sudo virsh net-update default add ip-dhcp-host \
+     "<host mac='52:54:00:xx:xx:xx' name='moodle-pc' ip='192.168.122.10'/>" --live --config
+   ```
+   Do the same for the tool VM, with `tools-pc` and `.11`. Reboot both VMs and check with
+   `sudo virsh net-dhcp-leases default`. These addresses only exist inside the PC, so they
+   can't clash with VMs on another machine.
+3. Start both VMs on boot: `sudo virsh autostart <vm name>`.
+4. Take a snapshot of each VM.
 
 **At a hosting provider:**
 - Create two Ubuntu 24.04 servers, and add your SSH key while creating them.
@@ -44,23 +58,33 @@ The examples put Moodle on the bare domain `aht-test.site` and the tool on
 
 ## 2. SSH from the laptop
 
-1. Copy your laptop's SSH key to each server, so `deploy.sh` and `scp` don't need passwords:
-   ```sh
-   ssh-copy-id don@<server address>
-   ```
-2. Add both servers to `~/.ssh/config` on the laptop, so they have short names. For VMs on
-   the PC, the laptop reaches them through the PC (`ProxyJump`):
+The laptop can't reach the PC's VM network directly, so SSH goes through the PC
+(`ProxyJump`). This assumes SSH from the laptop to the PC already works.
+
+1. Add both servers to `~/.ssh/config` on the laptop, so they have short names:
    ```
    Host aht-moodle
-       HostName 192.168.122.x      # the VM's IP on the PC (provider: its public IP)
+       HostName 192.168.122.10     # provider: the server's public IP
        User don
        ProxyJump don@your-pc       # leave this out for a provider
    Host aht-tools
-       HostName 192.168.122.y
+       HostName 192.168.122.11
        User don
        ProxyJump don@your-pc
    ```
-3. To find a VM's IP, run `sudo virsh net-dhcp-leases default` on the PC.
+2. Copy your laptop's SSH key to each server, so `deploy.sh` and `scp` don't need passwords:
+   ```sh
+   ssh-copy-id aht-moodle
+   ssh-copy-id aht-tools
+   ```
+3. Check with `ssh aht-moodle` and `ssh aht-tools`.
+
+To see the PC's VMs from the laptop, use virt-manager's connection to the PC (double-click a
+VM for its console), or run:
+```sh
+virsh -c qemu+ssh://don@your-pc/system list --all
+virsh -c qemu+ssh://don@your-pc/system net-dhcp-leases default
+```
 
 ## 3. Create the Cloudflare tunnels
 
@@ -71,7 +95,7 @@ things now and then, so the labels may differ slightly.
 2. The install page shows a command ending in a long **token**. Copy just the token, and
    don't run the command; the setup script does that.
 3. Add a public hostname (published application):
-   - **Subdomain:** leave empty, for the bare domain
+   - **Subdomain:** `moodle`
    - **Domain:** `aht-test.site`
    - **Service:** `HTTP`, URL `localhost:80`
 4. Repeat for `showcase-tools`, with subdomain `tools` and service `HTTP`, URL `localhost:8000`.
@@ -90,7 +114,7 @@ From the laptop:
 ```sh
 scp deploy/setup-moodle.sh aht-moodle:
 ssh aht-moodle
-sudo MOODLE_URL=https://aht-test.site ADMIN_EMAIL=you@example.com bash setup-moodle.sh
+sudo MOODLE_URL=https://moodle.aht-test.site ADMIN_EMAIL=you@example.com bash setup-moodle.sh
 ```
 - Paste the `showcase-moodle` token when it asks.
 - The script takes about 10 minutes.
@@ -103,7 +127,7 @@ From the laptop:
 ```sh
 scp deploy/setup-tools.sh aht-tools:
 ssh aht-tools
-sudo TOOL_URL=https://tools.aht-test.site MOODLE_URL=https://aht-test.site bash setup-tools.sh
+sudo TOOL_URL=https://tools.aht-test.site MOODLE_URL=https://moodle.aht-test.site bash setup-tools.sh
 exit
 deploy/deploy.sh aht-tools        # installs the code; should end with "active"
 ```
@@ -112,7 +136,7 @@ Paste the `showcase-tools` token when it asks.
 ## 6. Check both are reachable
 
 - https://tools.aht-test.site/.well-known/jwks.json shows `{"keys":[...`.
-- https://aht-test.site shows the Moodle login page with a padlock.
+- https://moodle.aht-test.site shows the Moodle login page with a padlock.
 - In Cloudflare, both tunnels show as **Healthy**.
 
 ## 7. Connect the tool to Moodle

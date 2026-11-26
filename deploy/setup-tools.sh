@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Set up a fresh Ubuntu 24.04 or 26.04 server for the quiz tool, behind a Cloudflare Tunnel.
 #
-#   sudo TOOL_URL=https://tools.aht-test.site MOODLE_URL=https://aht-test.site bash setup-tools.sh
+#   sudo TOOL_URL=https://tools.aht-test.site MOODLE_URL=https://moodle.aht-test.site bash setup-tools.sh
 #
 # Optional: TOOL_NAME (default "Quiz Showcase"), TIMEZONE (default Australia/Sydney),
 # CF_TUNNEL_TOKEN (otherwise you're asked).
@@ -13,7 +13,7 @@
 set -euo pipefail
 
 : "${TOOL_URL:?Set TOOL_URL, e.g. https://tools.aht-test.site}"
-: "${MOODLE_URL:?Set MOODLE_URL, e.g. https://aht-test.site}"
+: "${MOODLE_URL:?Set MOODLE_URL, e.g. https://moodle.aht-test.site}"
 TOOL_NAME="${TOOL_NAME:-Quiz Showcase}"
 TIMEZONE="${TIMEZONE:-Australia/Sydney}"
 
